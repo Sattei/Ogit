@@ -5,16 +5,14 @@ const path = require("path");
 const crypto = require("crypto");
 
 const ogitdir = path.join(process.cwd(), ".ogit");
-
 const command = process.argv[2];
-
 const indexPath = path.join(ogitdir, "index");
 
 function hashobject(content) {
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
-// ogit init
+// ========== ogit init ==========
 if (command === "init") {
   console.log("Initializing ogit repository...");
 
@@ -22,18 +20,16 @@ if (command === "init") {
     console.log("ogit already initialized.");
   } else {
     console.log("Creating .ogit repository...");
-
     fs.mkdirSync(ogitdir);
     fs.mkdirSync(path.join(ogitdir, "objects"));
     fs.mkdirSync(path.join(ogitdir, "refs"));
     fs.mkdirSync(path.join(ogitdir, "refs", "heads"));
-    fs.writeFileSync(path.join(ogitdir, "index"), "");
-
+    fs.writeFileSync(indexPath, "");
     console.log("ogit repository initialized successfully!");
   }
 }
 
-// ogit add <filename>
+// ========== ogit add ==========
 else if (command === "add") {
   const filename = process.argv[3];
   if (!filename) {
@@ -53,17 +49,23 @@ else if (command === "add") {
 
   if (!fs.existsSync(objectPath)) {
     fs.writeFileSync(objectPath, content);
-    console.log(`Added ${filename} to ogit.`);
-  } else {
-    console.log(`File ${filename} already added to ogit.`);
   }
 
-  fs.appendFileSync(indexPath, `${filename} ${hash}\n`);
+  // prevent duplicate entries in index
+  let indexContent = fs.existsSync(indexPath)
+    ? fs.readFileSync(indexPath, "utf8")
+    : "";
+  indexContent = indexContent
+    .split("\n")
+    .filter((line) => line.trim() && !line.startsWith(filename + " "))
+    .concat(`${filename} ${hash}`)
+    .join("\n");
 
+  fs.writeFileSync(indexPath, indexContent + "\n");
   console.log(`Added ${filename} to ogit index.`);
 }
 
-// ogit commit -m <message>
+// ========== ogit commit ==========
 else if (command === "commit") {
   const messageFlag = process.argv[3];
   const message = process.argv[4];
@@ -85,30 +87,33 @@ else if (command === "commit") {
   }
 
   const commitObject = {
-    message: message,
+    message,
     timeStamp: new Date().toISOString(),
     files: indexContent.split("\n").map((line) => {
       const [filename, hash] = line.trim().split(" ");
       return { filename, hash };
     }),
+    parent: fs.existsSync(path.join(ogitdir, "refs", "heads", "master"))
+      ? fs
+          .readFileSync(path.join(ogitdir, "refs", "heads", "master"), "utf8")
+          .trim()
+      : null,
   };
-  const serializedCommit = JSON.stringify(commitObject, null, 2);
-  const commitHash = crypto
-    .createHash("sha256")
 
-    .update(serializedCommit)
-    .digest("hex");
+  const serializedCommit = JSON.stringify(commitObject, null, 2);
+  const commitHash = hashobject(serializedCommit);
   const objectPath = path.join(ogitdir, "objects", commitHash);
   fs.writeFileSync(objectPath, serializedCommit);
+
   const headPath = path.join(ogitdir, "refs", "heads", "master");
   fs.writeFileSync(headPath, commitHash);
 
   fs.writeFileSync(indexPath, "");
 
-  console.log(`Committes as ${commitHash} with message: "${message}"`);
+  console.log(`Committed as ${commitHash} with message: "${message}"`);
 }
 
-//ogit log
+// ========== ogit log ==========
 else if (command === "log") {
   const headPath = path.join(ogitdir, "refs", "heads", "master");
   if (!fs.existsSync(headPath)) {
@@ -117,7 +122,6 @@ else if (command === "log") {
   }
 
   let currentHash = fs.readFileSync(headPath, "utf8").trim();
-
   while (currentHash) {
     const commitPath = path.join(ogitdir, "objects", currentHash);
     if (!fs.existsSync(commitPath)) {
@@ -127,14 +131,44 @@ else if (command === "log") {
 
     const commitData = fs.readFileSync(commitPath, "utf8");
     const commitObject = JSON.parse(commitData);
+
     console.log(`Commit: ${currentHash}`);
     console.log(`Message: ${commitObject.message}`);
     console.log(`Timestamp: ${commitObject.timeStamp}`);
     console.log("----");
 
-    break;
+    currentHash = commitObject.parent;
   }
 }
 
-// ogit status 
+// ========== ogit status ==========
+else if (command === "status") {
+  if (!fs.existsSync(ogitdir)) {
+    console.log("Not an ogit repository.");
+    process.exit(1);
+  }
 
+  const files = fs.readdirSync(process.cwd()).filter((f) => f !== ".ogit");
+  let staged = fs.existsSync(indexPath)
+    ? fs.readFileSync(indexPath, "utf8").trim().split("\n").filter(Boolean)
+    : [];
+
+  console.log("=== ogit status ===");
+  console.log("Staged files:");
+  staged.forEach((line) => {
+    const [filename] = line.split(" ");
+    console.log(`\t${filename}`);
+  });
+
+  console.log("Untracked files:");
+  files.forEach((file) => {
+    if (!staged.some((line) => line.startsWith(file + " "))) {
+      console.log(`\t${file}`);
+    }
+  });
+}
+
+// ========== Unknown command ==========
+else {
+  console.log("Unknown command:", command);
+}
