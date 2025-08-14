@@ -1,9 +1,9 @@
-->Ogit – A Mini Git Implementation in Node.js
+# ->Ogit – A Mini Git Implementation in Node.js
 
 Ogit is a lightweight, educational version control tool inspired by Git.
 It helps you understand how Git works under the hood by implementing basic commands like init, add, commit, and log using Node.js.
 
-->Features
+# ->Features
 
 ogit init → Create a .ogit directory to store repo data.
 
@@ -15,7 +15,7 @@ ogit log → View commit history.
 
 ogit status → Show changes compared to the last commit.
 
-->Installation
+# ->Installation
 
 Clone the repository:
 
@@ -32,7 +32,7 @@ Link the CLI tool:
 
 npm link
 
-🚀 Usage
+# ->Usage
 # Initialize repository
 ogit init
 
