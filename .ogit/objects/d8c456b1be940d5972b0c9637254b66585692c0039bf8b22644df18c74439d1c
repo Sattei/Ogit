@@ -1,0 +1,14 @@
+{
+  "message": "Change is bad",
+  "timeStamp": "2025-06-27T11:43:14.751Z",
+  "files": [
+    {
+      "filename": "test.txt",
+      "hash": "cba5a8a46023b33208f9bf92c0406facd3cecb25607bc528182bc9d53eab1a47"
+    },
+    {
+      "filename": "test.txt",
+      "hash": "823a6f5e4419764f5b474b1ce5336c1f8fd5ae0e24ce3ac2951ffec25c6c6c60"
+    }
+  ]
+}

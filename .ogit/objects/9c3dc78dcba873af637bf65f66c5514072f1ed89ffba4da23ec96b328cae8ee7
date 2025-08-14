@@ -1,0 +1,10 @@
+{
+  "message": "Change is good",
+  "timeStamp": "2025-06-27T11:36:38.413Z",
+  "files": [
+    {
+      "filename": "test.txt",
+      "hash": "cba5a8a46023b33208f9bf92c0406facd3cecb25607bc528182bc9d53eab1a47"
+    }
+  ]
+}
